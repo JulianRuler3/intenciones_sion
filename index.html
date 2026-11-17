@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intenciones de la semana</title>
+  <meta name="description" content="Escribe un texto y recibe, al azar y de forma anónima, el de otra persona.">
+  <meta name="color-scheme" content="light dark">
+  <!--
+    Política de seguridad de contenido: solo se permite cargar scripts propios y
+    el SDK de Supabase desde jsDelivr, estilos propios y de Google Fonts (hoja de estilos en
+    fonts.googleapis.com y archivos de fuente en fonts.gstatic.com), y conectar con *.supabase.co.
+    Si usas un dominio propio para Supabase, añádelo en connect-src.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <link rel="icon" href="./img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=MonteCarlo&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+SA:wght@100..400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar al contenido</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#/">
+        <!-- Logo: se pinta con la máscara de logo.svg y el color del tema (ver styles.css). -->
+        <span class="brand-logo" aria-hidden="true"></span>
+        <span class="amatic-bold">Intenciones de la semana</span>
+      </a>
+      <nav aria-label="Principal" class="nav">
+        <a href="#/" id="nav-participant" class="nav-link amatic">Participar</a>
+        <a href="#/admin" id="nav-admin" class="nav-link amatic">Administración</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="container" tabindex="-1">
+
+    <div id="config-error" class="alert alert-error" role="alert" hidden></div>
+
+    <!-- ===================== ZONA DE PARTICIPANTES ===================== -->
+    <section id="view-participant" class="view" aria-labelledby="title-participant">
+      <div class="hero hero-with-logo">
+        <span class="hero-logo" role="img" aria-label="Logotipo de Sion"></span>
+        <div class="hero-text">
+          <h1 id="title-participant" tabindex="-1" class="amatic-bold">Intenciones de la semana</h1>
+          <p class="lead">
+            Entra con tu PIN, envía tu intención y, cuando se haga el reparto, descubre la intención por la que vas a rezar esta semana.
+            Nadie sabrá quién escribió cada intención.
+          </p>
+        </div>
+      </div>
+
+      <article class="card" aria-labelledby="status-title">
+        <div class="card-head">
+          <h2 id="status-title">Estado del reparto</h2>
+          <span id="phase-badge" class="badge badge-muted">Cargando…</span>
+        </div>
+
+        <dl class="stats">
+          <div class="stat">
+            <dt>Participantes confirmados</dt>
+            <dd id="stat-count">–</dd>
+          </div>
+          <div class="stat">
+            <dt>Mínimo necesario</dt>
+            <dd id="stat-min">–</dd>
+          </div>
+          <div class="stat">
+            <dt>Faltan</dt>
+            <dd id="stat-missing">–</dd>
+          </div>
+        </dl>
+
+        <div class="progress" id="progress" role="progressbar" aria-label="Participantes respecto al mínimo"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <p id="phase-text" class="muted" aria-live="polite">Consultando el estado del evento…</p>
+
+        <button type="button" id="btn-refresh" class="btn btn-ghost btn-small">Actualizar estado</button>
+      </article>
+
+      <div class="with-aside">
+        <div class="col-main">
+        <!-- Acceso solo con el PIN. Según haya enviado ya su intención o no, se muestra el envío o la consulta -->
+        <article class="card card-narrow" id="card-access" aria-labelledby="access-title">
+          <h2 id="access-title">Introduce tu PIN</h2>
+          <p class="muted">Escribe tu PIN para entrar. Es el código que empieza por SION-.</p>
+          <form id="access-form" novalidate>
+            <div class="field">
+              <label for="acc-pin">PIN (formato SION-XXXXXX)</label>
+              <input id="acc-pin" data-peek name="pin" type="password" autocapitalize="characters" spellcheck="false"
+                     maxlength="11" autocomplete="off" aria-describedby="acc-pin-error" required>
+              <p id="acc-pin-error" class="field-error" role="alert"></p>
+            </div>
+            <button type="submit" id="btn-access" class="btn btn-primary btn-block">Entrar</button>
+          </form>
+          <div id="access-feedback" class="feedback" aria-live="polite"></div>
+          <p class="hint">¿No tienes PIN?</p>
+          <button type="button" id="btn-first-time" class="btn btn-primary btn-small">Es mi primera vez</button>
+        </article>
+
+        <!-- Primera vez: nombre, apellidos e intención; el servidor genera el PIN -->
+        <article class="card card-narrow" id="card-first" aria-labelledby="first-title" hidden>
+          <h2 id="first-title">Primera vez</h2>
+          <p class="muted">Escribe tu nombre y apellidos y tu intención para esta semana. Al enviarla te daremos tu PIN: anótalo, lo necesitarás cada vez que entres. Un administrador validará tu registro.</p>
+          <form id="first-form" novalidate>
+            <div class="field-row">
+              <div class="field">
+                <label for="first-name">Nombre</label>
+                <input id="first-name" name="name" type="text" maxlength="60" autocomplete="given-name"
+                       aria-describedby="first-name-error" required>
+                <p id="first-name-error" class="field-error" role="alert"></p>
+              </div>
+              <div class="field">
+                <label for="first-surname">Apellidos</label>
+                <input id="first-surname" name="surname" type="text" maxlength="60" autocomplete="family-name"
+                       aria-describedby="first-surname-error" required>
+                <p id="first-surname-error" class="field-error" role="alert"></p>
+              </div>
+            </div>
+            <div class="field">
+              <label for="first-text">Tu intención para esta semana</label>
+              <textarea id="first-text" name="text" rows="8" maxlength="2000"
+                        aria-describedby="first-text-count first-text-error" required></textarea>
+              <p id="first-text-count" class="hint counter">0 / 2000</p>
+              <p id="first-text-error" class="field-error" role="alert"></p>
+            </div>
+            <button type="submit" id="btn-first" class="btn btn-primary btn-block">Enviar</button>
+          </form>
+          <div id="first-feedback" class="feedback" aria-live="polite"></div>
+          <p class="hint">¿Ya tienes PIN?</p>
+          <button type="button" id="btn-have-pin" class="btn btn-primary btn-small">Volver a introducirlo</button>
+        </article>
+
+        <!-- Persona que ha accedido (la sesión solo vive en memoria: al recargar hay que volver a acceder) -->
+        <div id="session-bar" class="alert alert-info" role="status" hidden>
+          <p id="session-greeting" class="session-greeting"></p>
+          <p id="session-text"></p>
+          <button type="button" id="btn-switch-person" class="btn btn-ghost btn-small">Cambiar de persona</button>
+        </div>
+
+        <!-- Confirmación tras enviar la intención (incluye el PIN la primera vez) -->
+        <div id="sent-note" class="alert alert-success" role="status" tabindex="-1" hidden>
+          <p id="sent-note-text"></p>
+          <p id="sent-pin-row" hidden>Tu PIN: <strong id="sent-pin" class="pin-code"></strong>
+            <button type="button" id="btn-copy-pin" class="btn btn-ghost btn-small">Copiar PIN</button></p>
+        </div>
+
+        <div class="grid-2 grid-single" id="participant-grid" hidden>
+          <!-- Envío de la intención -->
+          <article class="card" id="card-register" aria-labelledby="register-title" hidden>
+            <h2 id="register-title">Tu intención</h2>
+            <form id="register-form" novalidate>
+              <div class="field">
+                <label for="reg-text">Tu intención para esta semana</label>
+                <textarea id="reg-text" name="text" rows="8" maxlength="2000"
+                          aria-describedby="reg-text-count reg-text-error" required></textarea>
+                <p id="reg-text-count" class="hint counter">0 / 2000</p>
+                <p id="reg-text-error" class="field-error" role="alert"></p>
+              </div>
+              <button type="submit" id="btn-register" class="btn btn-primary btn-block">Enviar</button>
+            </form>
+
+            <div id="register-feedback" class="feedback" aria-live="polite"></div>
+          </article>
+
+          <!-- Consulta -->
+          <article class="card" id="card-result" aria-labelledby="result-title" hidden>
+            <h2 id="result-title">Tu intención de esta semana</h2>
+            <p class="muted">Los resultados se pueden consultar durante <span id="retention-days">7</span> días desde el reparto.</p>
+
+            <div id="result-output" class="feedback" aria-live="polite"></div>
+
+            <button type="button" id="btn-result" class="btn btn-primary btn-block">Ver intención</button>
+          </article>
+        </div>
+        </div>
+        <aside class="card instructions" aria-labelledby="instr-title">
+          <h2 id="instr-title">Cómo funciona</h2>
+          <ol>
+            <li><strong>Entra con tu PIN.</strong> Es el código que empieza por SION-. Si es tu primera vez, pulsa «Es mi primera vez» y te daremos uno.</li>
+            <li><strong>Escribe tu intención</strong> para esta semana y pulsa «Enviar». Un administrador validará tu registro la primera vez.</li>
+            <li><strong>Espera al reparto.</strong> Cuando se haga, vuelve, entra con tu PIN y pulsa «Ver intención».</li>
+            <li><strong>Reza esta semana</strong> por la intención que te haya tocado. Nadie sabrá quién la escribió.</li>
+          </ol>
+          <p class="hint">Apunta tu PIN y no lo compartas: con él se accede a tu intención. Si lo pierdes, pide uno nuevo a un administrador.</p>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ===================== ZONA DE ADMINISTRACIÓN ===================== -->
+    <section id="view-admin" class="view" aria-labelledby="title-admin" hidden>
+      <div class="hero">
+        <p class="eyebrow">Zona restringida</p>
+        <h1 id="title-admin" tabindex="-1">Administración</h1>
+      </div>
+
+      <!-- Acceso -->
+      <article class="card card-narrow" id="admin-login" aria-labelledby="login-title">
+        <h2 id="login-title">Acceso de administrador</h2>
+        <p class="muted">
+          La credencial se comprueba en el servidor en cada operación.
+          No se guarda en este navegador: si recargas la página tendrás que volver a introducirla.
+        </p>
+        <form id="admin-login-form" novalidate>
+          <div class="field">
+            <label for="adm-token">Credencial de administrador</label>
+            <input id="adm-token" data-peek name="token" type="password" autocomplete="off"
+                   aria-describedby="adm-token-error" required>
+            <p id="adm-token-error" class="field-error" role="alert"></p>
+          </div>
+          <button type="submit" id="btn-login" class="btn btn-primary btn-block">Entrar</button>
+        </form>
+        <div id="login-feedback" class="feedback" aria-live="polite"></div>
+      </article>
+
+      <!-- Panel -->
+      <div id="admin-panel" hidden>
+
+        <!-- Eventos -->
+        <article class="card" aria-labelledby="adm-events-title">
+          <div class="card-head">
+            <h2 id="adm-events-title">Eventos</h2>
+            <button type="button" id="btn-new-event" class="btn btn-secondary btn-small" aria-expanded="false" aria-controls="admin-create-form">Crear evento</button>
+          </div>
+
+          <form id="admin-create-form" novalidate hidden>
+            <div class="grid-2 grid-flat">
+              <div class="field">
+                <label for="new-name">Nombre del evento</label>
+                <input id="new-name" name="name" type="text" maxlength="120" aria-describedby="new-name-error" required>
+                <p id="new-name-error" class="field-error" role="alert"></p>
+              </div>
+              <div class="field">
+                <label for="new-slug">Identificador (slug)</label>
+                <input id="new-slug" name="slug" type="text" maxlength="40" autocapitalize="none" spellcheck="false"
+                       aria-describedby="new-slug-hint new-slug-error" required>
+                <p id="new-slug-hint" class="hint">De 3 a 40 caracteres: minúsculas, números y guiones. Irá en el enlace.</p>
+                <p id="new-slug-error" class="field-error" role="alert"></p>
+              </div>
+              <div class="field">
+                <label for="new-min">Mínimo de participantes</label>
+                <input id="new-min" name="min" type="number" inputmode="numeric" min="2" max="100000" step="1" value="4"
+                       aria-describedby="new-min-error">
+                <p id="new-min-error" class="field-error" role="alert"></p>
+              </div>
+              <div class="field">
+                <label for="new-max">Longitud máxima del texto</label>
+                <input id="new-max" name="max" type="number" inputmode="numeric" min="1" max="10000" step="1" value="2000"
+                       aria-describedby="new-max-error">
+                <p id="new-max-error" class="field-error" role="alert"></p>
+              </div>
+            </div>
+            <div class="field switch-field">
+              <input id="new-auto" name="auto" type="checkbox" role="switch" class="switch" checked>
+              <label for="new-auto">
+                Reparto automático
+                <span class="hint block">Se reparte solo al llegar al mínimo de participantes aprobados.</span>
+              </label>
+            </div>
+            <div class="actions-row">
+              <button type="button" id="btn-new-cancel" class="btn btn-ghost">Cancelar</button>
+              <button type="submit" id="btn-new-create" class="btn btn-primary">Crear evento</button>
+            </div>
+          </form>
+
+          <div id="adm-events-body">
+            <div class="field">
+              <label for="adm-event-select">Evento que administras</label>
+              <select id="adm-event-select"></select>
+            </div>
+            <div class="field">
+              <label for="adm-share">Enlace para los participantes</label>
+              <div class="copy-row">
+                <input id="adm-share" type="text" readonly>
+                <button type="button" id="btn-copy-link" class="btn btn-secondary btn-small">Copiar</button>
+              </div>
+              <p class="hint">Cada evento tiene su propio enlace. Compártelo con quien deba participar.</p>
+            </div>
+          </div>
+          <p id="adm-events-empty" class="muted" hidden>Todavía no hay ningún evento. Pulsa «Crear evento» para empezar.</p>
+          <div id="events-feedback" class="feedback" aria-live="polite"></div>
+        </article>
+
+        <div id="adm-event-area">
+          <article class="card" aria-labelledby="adm-status-title">
+            <div class="card-head">
+              <h2 id="adm-status-title">Estado del evento</h2>
+              <span id="adm-badge" class="badge badge-muted">–</span>
+            </div>
+
+            <dl class="stats stats-4">
+              <div class="stat">
+                <dt>Aprobados</dt>
+                <dd id="adm-count">–</dd>
+              </div>
+              <div class="stat">
+                <dt>Pendientes de validar</dt>
+                <dd id="adm-pending">–</dd>
+              </div>
+              <div class="stat">
+                <dt>Mínimo para repartir</dt>
+                <dd id="adm-min-view">–</dd>
+              </div>
+              <div class="stat">
+                <dt>Faltan para el mínimo</dt>
+                <dd id="adm-missing">–</dd>
+              </div>
+            </dl>
+
+            <p id="adm-mode-text" class="muted"></p>
+            <p class="muted small" id="adm-event-name"></p>
+          </article>
+
+          <div class="grid-2">
+            <article class="card" aria-labelledby="adm-config-title">
+              <h2 id="adm-config-title">Configuración</h2>
+
+              <form id="admin-config-form" novalidate>
+                <div class="field">
+                  <label for="adm-min">Mínimo de participantes para repartir</label>
+                  <input id="adm-min" name="min" type="number" inputmode="numeric" min="2" max="100000" step="1"
+                         aria-describedby="adm-min-hint adm-min-error">
+                  <p id="adm-min-hint" class="hint">Entero igual o superior a 2. Solo cuentan los participantes aprobados.</p>
+                  <p id="adm-min-error" class="field-error" role="alert"></p>
+                </div>
+
+                <div class="field switch-field">
+                  <input id="adm-auto" name="auto" type="checkbox" role="switch" class="switch">
+                  <label for="adm-auto">
+                    Reparto automático
+                    <span class="hint block">Si está activado, el reparto se hace solo al alcanzar el mínimo de aprobados.</span>
+                  </label>
+                </div>
+
+                <button type="submit" id="btn-save" class="btn btn-primary btn-block">Guardar configuración</button>
+              </form>
+            </article>
+
+            <article class="card" aria-labelledby="adm-dist-title">
+              <h2 id="adm-dist-title">Reparto</h2>
+              <p class="muted" id="adm-dist-help">
+                Puedes repartir en cualquier momento, aunque no se haya alcanzado el mínimo
+                (se necesitan al menos 2 participantes aprobados).
+              </p>
+              <button type="button" id="btn-distribute" class="btn btn-danger btn-block">Iniciar reparto ahora</button>
+              <button type="button" id="btn-redistribute" class="btn btn-secondary btn-block spaced" hidden>Repetir el reparto</button>
+              <p id="adm-dist-note" class="hint"></p>
+            </article>
+          </div>
+
+          <article class="card" aria-labelledby="adm-people-title">
+            <div class="card-head">
+              <h2 id="adm-people-title">Participantes</h2>
+              <button type="button" id="btn-add-person" class="btn btn-secondary btn-small">Añadir participante</button>
+            </div>
+            <p class="muted small" id="adm-people-help">
+              Los registros nuevos quedan pendientes hasta que los apruebes. Aquí ves el texto de cada persona para revisarlo;
+              nunca se muestra quién recibe qué.
+            </p>
+            <div id="part-filters" class="filters" role="group" aria-label="Filtrar participantes"></div>
+            <ul id="part-list" class="people" aria-live="polite"></ul>
+            <p id="part-empty" class="muted" hidden></p>
+          </article>
+
+          <article class="card" aria-labelledby="adm-members-title">
+            <div class="card-head">
+              <h2 id="adm-members-title">Participantes guardados</h2>
+              <span id="members-count" class="badge badge-muted">0</span>
+            </div>
+            <p class="muted small">
+              Al aprobar a alguien queda guardado (nombre, apellidos y PIN cifrado) hasta que lo quites. En los próximos
+              eventos, si se registra con su texto y su PIN, entra aprobado sin esperar validación. Si quitas a alguien,
+              volverá a necesitar validación y podrá elegir otro PIN.
+            </p>
+            <ul id="members-list" class="people" aria-live="polite"></ul>
+            <details class="import-box" id="import-box">
+              <summary>Importar personas con PIN ya existentes</summary>
+              <p class="hint">Una persona por línea: <code>Nombre; Apellidos; SION-XXXXXX</code> (también vale pegar desde Excel). Quedan guardadas: al entrar con su PIN, su intención cuenta aprobada al instante. Si ya estaba guardada, se le cambia el PIN.</p>
+              <label for="import-text" class="visually-hidden">Lista de personas y PINs</label>
+              <textarea id="import-text" rows="6" spellcheck="false" placeholder="Ana; Pérez García; SION-AB12CD"></textarea>
+              <button type="button" id="btn-import" class="btn btn-secondary btn-small">Importar</button>
+              <div id="import-feedback" class="feedback" aria-live="polite"></div>
+            </details>
+            <p id="members-empty" class="muted" hidden>Todavía no hay participantes guardados: se guardan al aprobarlos.</p>
+          </article>
+
+          <div id="admin-feedback" class="feedback" aria-live="polite"></div>
+        </div>
+
+        <div class="actions-row">
+          <button type="button" id="btn-adm-refresh" class="btn btn-ghost btn-small">Actualizar</button>
+          <button type="button" id="btn-logout" class="btn btn-ghost btn-small">Cerrar sesión</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="playwrite-au">«Ruego, pues, lo primero de todo, que se hagan peticiones, oraciones, súplicas y acciones de gracias por todos los hombres». - <i>1&nbsp;Tim&nbsp;2,1</i>.</p>
+    </div>
+  </footer>
+
+  <!-- Diálogo de alta / edición de participante (administración) -->
+  <!-- PIN recién generado: solo se muestra una vez -->
+  <dialog id="pin-dialog" aria-labelledby="pin-dialog-title">
+    <h2 id="pin-dialog-title">PIN generado</h2>
+    <p id="pin-dialog-text"></p>
+    <p><strong id="pin-dialog-pin" class="pin-code"></strong></p>
+    <p class="hint">Entrégaselo a la persona. Puedes volver a verlo con «Mostrar PIN» en su ficha; si se pierde o se filtra, genera uno nuevo.</p>
+    <div class="dialog-actions">
+      <button type="button" id="pin-dialog-copy" class="btn btn-ghost">Copiar PIN</button>
+      <button type="button" id="pin-dialog-close" class="btn btn-primary">Ya lo he anotado</button>
+    </div>
+  </dialog>
+
+  <dialog id="person-dialog" class="dialog-wide" aria-labelledby="person-title">
+    <form id="person-form" novalidate>
+      <h2 id="person-title">Participante</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="per-name">Nombre</label>
+          <input id="per-name" type="text" maxlength="60" autocomplete="off" aria-describedby="per-name-error" required>
+          <p id="per-name-error" class="field-error" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="per-surname">Apellidos</label>
+          <input id="per-surname" type="text" maxlength="60" autocomplete="off" aria-describedby="per-surname-error" required>
+          <p id="per-surname-error" class="field-error" role="alert"></p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="per-text">Texto</label>
+        <textarea id="per-text" rows="6" aria-describedby="per-text-error" required></textarea>
+        <p id="per-text-error" class="field-error" role="alert"></p>
+      </div>
+      <div class="field">
+        <label for="per-pin" id="per-pin-label">PIN</label>
+        <input id="per-pin" data-peek type="password" autocapitalize="characters" spellcheck="false" maxlength="11" autocomplete="off"
+               aria-describedby="per-pin-hint per-pin-error">
+        <p id="per-pin-hint" class="hint"></p>
+        <p id="per-pin-error" class="field-error" role="alert"></p>
+      </div>
+      <div class="field" id="per-regen-wrap" hidden>
+        <label class="check"><input type="checkbox" id="per-regen"> Generar un PIN nuevo (el antiguo dejará de valer)</label>
+      </div>
+      <div id="person-feedback" class="feedback" aria-live="polite"></div>
+      <div class="dialog-actions">
+        <button type="button" id="person-cancel" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" id="person-save" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Diálogo de confirmación -->
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <h2 id="confirm-title">Confirmar</h2>
+    <p id="confirm-message"></p>
+    <div class="dialog-actions">
+      <button type="button" id="confirm-cancel" class="btn btn-ghost">Cancelar</button>
+      <button type="button" id="confirm-ok" class="btn btn-primary">Confirmar</button>
+    </div>
+  </dialog>
+
+  <!-- SDK de Supabase: versión fija + integridad (SRI). El hash es el de supabase-js 2.118.0
+       calculado a partir del paquete de npm; si el navegador lo rechaza, consulta el README
+       (apartado "Errores habituales"). -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
+          integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK"
+          crossorigin="anonymous"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/script.js"></script>
+</body>
+</html>
