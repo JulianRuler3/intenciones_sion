@@ -170,8 +170,8 @@ h1:focus, h1:focus-visible, h3:focus, h3:focus-visible { outline: none; }
   flex: none;
   aspect-ratio: 161.94 / 431.24;
   background-color: var(--primary);
-  -webkit-mask: url("../img/logo_sion.svg") center / contain no-repeat;
-  mask: url("../img/logo_sion.svg") center / contain no-repeat;
+  -webkit-mask: url("logo.svg") center / contain no-repeat;
+  mask: url("logo.svg") center / contain no-repeat;
 }
 .brand-logo { height: 2.75rem; }
 .nav { display: flex; gap: .25rem; }
@@ -602,3 +602,6 @@ dialog::backdrop { background: rgba(10, 14, 22, .55); }
   padding: .35rem .6rem; border-radius: .4rem; font: inherit; font-size: .85rem; font-weight: 600; color: var(--primary); cursor: pointer; }
 .peek-btn:hover { background: var(--primary-soft, rgba(0,0,0,.06)); }
 .peek-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+/* Frase del pie en una sola línea, ajustada al ancho del contenido (el tamaño lo fija script.js) */
+.fit-line { white-space: nowrap; text-align: center; margin: 0; line-height: 1.2; }

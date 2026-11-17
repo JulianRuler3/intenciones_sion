@@ -1745,7 +1745,28 @@
     setText('phase-text', 'La aplicación no está configurada.');
   }
 
+  /* Frase del pie: una sola línea que ocupa justo el ancho del contenido (se reajusta al cambiar el tamaño) */
+  function setupFitLine() {
+    const fitEl = document.querySelector('.fit-line');
+    if (!fitEl) return;
+    const fit = () => {
+      const box = fitEl.parentElement;
+      const cs = getComputedStyle(box);
+      const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (avail <= 0) return;
+      fitEl.style.display = 'inline-block';
+      fitEl.style.fontSize = '100px';
+      const w = fitEl.getBoundingClientRect().width;
+      fitEl.style.display = '';
+      if (w > 0) fitEl.style.fontSize = Math.max(6, Math.min(48, (98 * avail) / w)) + 'px';
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  }
+
   function init() {
+    setupFitLine();
     const problem = configProblem();
     if (problem) {
       const box = $('config-error');
