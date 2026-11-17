@@ -170,8 +170,8 @@ h1:focus, h1:focus-visible, h3:focus, h3:focus-visible { outline: none; }
   flex: none;
   aspect-ratio: 161.94 / 431.24;
   background-color: var(--primary);
-  -webkit-mask: url("logo.svg") center / contain no-repeat;
-  mask: url("logo.svg") center / contain no-repeat;
+  -webkit-mask: url("../img/logo_sion.svg") center / contain no-repeat;
+  mask: url("../img/logo_sion.svg") center / contain no-repeat;
 }
 .brand-logo { height: 2.75rem; }
 .nav { display: flex; gap: .25rem; }
