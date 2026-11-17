@@ -10,6 +10,25 @@
                             (cabecera x-admin-token, validada en el servidor)
    No hay datos de ejemplo ni almacenamiento local: todo viene de Supabase.
    Todo lo que llega del servidor se pinta con textContent (nunca innerHTML).
+   
+.playwrite-au {
+  font-family: "Playwrite AU SA", cursive;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.amatic {
+  font-family: "Amatic SC", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.amatic-bold {
+  font-family: "Amatic SC", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
    ===================================================================== */
 (function () {
   'use strict';
@@ -1749,7 +1768,9 @@
   function setupFitLine() {
     const fitEl = document.querySelector('.fit-line');
     if (!fitEl) return;
+    const narrow = window.matchMedia('(max-width: 40rem)');   // teléfonos: la frase se parte en varias líneas
     const fit = () => {
+      if (narrow.matches) { fitEl.style.fontSize = ''; fitEl.style.display = ''; return; }
       const box = fitEl.parentElement;
       const cs = getComputedStyle(box);
       const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
